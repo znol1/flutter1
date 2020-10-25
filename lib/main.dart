@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rememder/models/note.dart';
+import 'package:intl/intl.dart';
+import './functions/date.dart';
 
 void main() {
   runApp(MyApp());
@@ -80,8 +82,13 @@ class _MyHomePageState extends State<MyHomePage> {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [Text(element.name), Text(element.title)]),
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(element.name),
+          Text(element.title),
+          Text(rusDate(DateFormat.yMMMd().format(element.date)))
+        ],
+      ),
     );
   }
 }
