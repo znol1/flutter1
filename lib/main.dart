@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rememder/models/note.dart';
 import 'package:intl/intl.dart';
+import 'package:rememder/widgets/new_note.dart';
 import './functions/date.dart';
 
 void main() {
@@ -30,25 +31,55 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-  final List<Note> _notes = [
-    Note(id: '1', date: DateTime.now(), title: 'One', name: 'Name1'),
-    Note(id: '2', date: DateTime.now(), title: 'Two', name: 'Name2'),
-    Note(id: '2', date: DateTime.now(), title: 'Two', name: 'Name2'),
-    Note(id: '2', date: DateTime.now(), title: 'Two', name: 'Name2'),
-    Note(id: '2', date: DateTime.now(), title: 'Two', name: 'Name2'),
-    Note(id: '2', date: DateTime.now(), title: 'Two', name: 'Name2'),
-    Note(id: '2', date: DateTime.now(), title: 'Two', name: 'Name2'),
-    Note(id: '2', date: DateTime.now(), title: 'Two', name: 'Name3'),
-    Note(id: '2', date: DateTime.now(), title: 'Two', name: 'Name3'),
-    Note(id: '2', date: DateTime.now(), title: 'Two', name: 'Name3'),
-    Note(id: '2', date: DateTime.now(), title: 'Two', name: 'Name3'),
+  List<Note> _notes = [
+    Note(id: '1', date: DateTime.utc(2020, 11, 1), title: 'One', name: 'Name1'),
+    Note(
+        id: '2', date: DateTime.utc(2020, 10, 28), title: 'Two', name: 'Name2'),
+    Note(
+        id: '3', date: DateTime.utc(2020, 05, 15), title: 'Two', name: 'Name3'),
   ];
+  List<Note> _note() {
+    _notes.sort((a, b) => some(a.date).compareTo(some(b.date)));
+    return _notes;
+  }
 
-  void _incrementCounter() {
+  void _addNewTransaction(String txTitle, String name, DateTime chosenDate) {
+    final newTx = Note(
+      title: txTitle,
+      name: name,
+      date: chosenDate,
+      id: DateTime.now().toString(),
+    );
     setState(() {
-      _counter++;
+      _notes.add(newTx);
     });
+  }
+
+  void _deleteTransaction(String id) {
+    setState(() {
+      _notes.removeWhere((tx) => tx.id == id);
+    });
+  }
+
+  void _startAddNewTransaction(BuildContext ctx) {
+    showModalBottomSheet(
+        context: ctx,
+        builder: (_) {
+          return GestureDetector(
+            onTap: () {},
+            child: NewTransaction(_addNewTransaction),
+            behavior: HitTestBehavior.opaque,
+          );
+        });
+  }
+
+  int some(date) {
+    int month = date.month - DateTime.now().month;
+    int day = date.day - DateTime.now().day + month * 30;
+    if (day < 0) {
+      day += 356;
+    }
+    return day;
   }
 
   @override
@@ -63,49 +94,33 @@ class _MyHomePageState extends State<MyHomePage> {
           if (item.isOdd) return SizedBox(height: 5);
 
           final index = item ~/ 2;
-          while (_notes.length > index) {
-            return _buildRow(_notes[index]);
+          while (_note().length > index) {
+            return _buildRow(index);
           }
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
         tooltip: 'Increment',
         child: Icon(Icons.add),
+        onPressed: () => _startAddNewTransaction(context),
       ),
     );
   }
 
   Widget _buildRow(element) {
     return Container(
-      padding: EdgeInsets.all(30),
       transform: Matrix4.rotationZ(0.01),
       decoration: BoxDecoration(
-        gradient: (() {
-          if (element.name == 'Name1') {
-            return LinearGradient(
-                begin: Alignment.bottomLeft,
-                end: Alignment.topRight,
-                colors: [
-                  const Color.fromRGBO(204, 43, 94, 100),
-                  const Color.fromRGBO(117, 58, 136, 100)
-                ]);
-          } else if (element.name == 'Name2') {
-            return LinearGradient(
-                begin: Alignment.bottomLeft,
-                end: Alignment.topRight,
-                colors: [
-                  const Color.fromRGBO(252, 74, 26, 100),
-                  const Color.fromRGBO(247, 183, 51, 100)
-                ]);
-          } else if (element.name == 'Name3') {
-            return LinearGradient(
-                begin: Alignment.bottomLeft,
-                end: Alignment.topRight,
-                colors: [
-                  const Color.fromRGBO(0, 201, 255, 100),
-                  const Color.fromRGBO(146, 254, 157, 100)
-                ]);
+        color: (() {
+          if (_notes[element].date.difference(DateTime.now()).inDays <= 1 &&
+              _notes[element].date.difference(DateTime.now()).inDays >= 0) {
+            return Colors.red[200];
+          } else if (_notes[element].date.difference(DateTime.now()).inDays <=
+                  30 &&
+              _notes[element].date.difference(DateTime.now()).inDays > 1) {
+            return Colors.yellow[200];
+          } else {
+            return Colors.green[200];
           }
         }()),
         borderRadius: BorderRadius.circular(20),
@@ -113,9 +128,31 @@ class _MyHomePageState extends State<MyHomePage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(element.name),
-          Text(element.title),
-          Text(rusDate(DateFormat.yMMMd().format(element.date)))
+          Container(
+            child: Text(_notes[element].name),
+            margin: EdgeInsets.all(20),
+          ),
+          Text(_notes[element].title),
+          Container(
+            padding: EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            margin: EdgeInsets.fromLTRB(0, 0, 10, 0),
+            child: Text(
+              rusDate(
+                DateFormat.yMMMd().format(_notes[element].date),
+              ),
+            ),
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.delete,
+              color: Theme.of(context).errorColor,
+            ),
+            onPressed: () => _deleteTransaction(_notes[element].id),
+          ),
         ],
       ),
     );
